@@ -14,6 +14,18 @@ const project = new ProjectConfig({
   plugins: [
     // Add Jovo CLI plugins here
   ],
+  defaultStage: 'dev',
+
+  stages: {
+    dev: {
+      endpoint: '${JOVO_WEBHOOK_URL}',
+      // ...
+    },
+    prod: {
+      endpoint: process.env.ENDPOINT_PROD,
+      // ...
+    },
+  },
 });
 
 module.exports = project;

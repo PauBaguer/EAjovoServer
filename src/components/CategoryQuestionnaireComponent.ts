@@ -2,6 +2,8 @@ import { Component, BaseComponent, Intents } from '@jovotech/framework';
 
 import { YesNoOutput } from '../output/YesNoOutput';
 
+import axios from 'axios';
+
 /*
 |--------------------------------------------------------------------------
 | Component
@@ -85,7 +87,7 @@ const questions = Array(
   },
 );
 
-function computeBestCategory() {
+async function computeBestCategory(userId: String) {
   let max = 0;
   let category = '';
 
@@ -96,7 +98,27 @@ function computeBestCategory() {
     }
   });
 
-  //push result to API
+  const baseUrl = process.env.API_URL || 'http://localhost:3000';
+
+  let resp: any = await axios.post(baseUrl + '/auth/singin', {
+    userName: 'Teresita',
+    password: 'teresita',
+  });
+
+  console.log(resp);
+  const token = resp.data.token!;
+
+  let resp2: any = await axios.put(
+    baseUrl + '/management/updateCategories/' + userId,
+    {
+      categories: category,
+    },
+    {
+      headers: {
+        authorization: token,
+      },
+    },
+  );
 
   return category;
 }
@@ -104,6 +126,8 @@ function computeBestCategory() {
 @Component()
 export class CategoryQuestionnaireComponent extends BaseComponent {
   START() {
+    console.log('START');
+
     questionIndex = 0;
     categoryPunctuation = new Map<string, number>([
       ['SCI-FI', 0],
@@ -122,7 +146,10 @@ export class CategoryQuestionnaireComponent extends BaseComponent {
   }
 
   @Intents(['YesIntent'])
-  likesRelaistic() {
+  async likesRelaistic() {
+    console.log('DATAA');
+    console.log(this.$session.data);
+
     console.log('YES INTENT');
     questions[questionIndex].ifYes();
     questionIndex = questions[questionIndex].yesQuestion;
@@ -130,7 +157,7 @@ export class CategoryQuestionnaireComponent extends BaseComponent {
     console.log(categoryPunctuation);
 
     if (questionIndex === -1) {
-      const cat = computeBestCategory();
+      const cat = await computeBestCategory(this.$session.data.user);
       return this.$send({
         message: `Thanks for your time!, your choosen category is: ${cat}`,
         listen: false,
@@ -143,7 +170,7 @@ export class CategoryQuestionnaireComponent extends BaseComponent {
   }
 
   @Intents(['NoIntent'])
-  likesFantasy() {
+  async likesFantasy() {
     console.log('NO INTENT');
     questions[questionIndex].ifNo();
     questionIndex = questions[questionIndex].noQuestion;
@@ -151,9 +178,9 @@ export class CategoryQuestionnaireComponent extends BaseComponent {
     console.log(categoryPunctuation);
 
     if (questionIndex === -1) {
-      const cat = computeBestCategory();
+      const cat = await computeBestCategory(this.$session.data.user);
       return this.$send({
-        message: `Thanks for your time!, your choosen category is: ${cat}`,
+        message: `Thanks for your time! Your choosen category is: ${cat}`,
         listen: false,
       });
     }
